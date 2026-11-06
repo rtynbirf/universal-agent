@@ -41,17 +41,19 @@ trap 'rm -rf "$T"' EXIT
 
 # --- 1. кандидаты в токены: собираем ВСЕ ---------------------------------
 CANDIDATES=()
+CAND_FILES=()
 SEEN="|"
 add_tok() {
-  local t="$1"
+  local t="$1" src="$2"
   [ -n "$t" ] || return 0
   case "$SEEN" in *"|$t|"*) return 0 ;; esac
   SEEN="$SEEN$t|"
   CANDIDATES+=("$t")
+  CAND_FILES+=("${src:-?}")
 }
 
 if [ -n "${GH_TOKEN:-}" ]; then
-  add_tok "$(printf '%s' "$GH_TOKEN" | tr -d ' \t\r\n')"
+  add_tok "$(printf '%s' "$GH_TOKEN" | tr -d ' \t\r\n')" "переменная GH_TOKEN"
   ok "Кандидат: токен из переменной GH_TOKEN"
 else
   # сканируем: папка скрипта, домашняя, Рабочий стол, Загрузки (без рекурсии)
@@ -60,7 +62,7 @@ else
     for f in "$d/.gh_token" "$d"/*.txt "$d"/*.TXT; do
       [ -e "$f" ] || continue
       if grep -qE 'gh[posur]_[A-Za-z0-9]{36,}|github_pat_[A-Za-z0-9_]{50,}' "$f" 2>/dev/null; then
-        while IFS= read -r t; do add_tok "$(printf '%s' "$t" | tr -d ' \t\r\n')"; done \
+        while IFS= read -r t; do add_tok "$(printf '%s' "$t" | tr -d ' \t\r\n')" "$f"; done \
           < <(grep -hoE 'gh[posur]_[A-Za-z0-9]{36,}|github_pat_[A-Za-z0-9_]{50,}' "$f" 2>/dev/null)
         ok "Файл с токеном: $f"
       fi
@@ -78,14 +80,15 @@ fi
 # --- 2. живой токен: перепробуем все --------------------------------------
 step "Токенов найдено: ${#CANDIDATES[@]}. Проверяю каждый через GitHub API..."
 TOKEN=""; LOGIN=""
-for t in "${CANDIDATES[@]}"; do
+for i in "${!CANDIDATES[@]}"; do
+  t="${CANDIDATES[$i]}"
   code="$(curl -sS -H "Authorization: Bearer $t" -H "User-Agent: universal-agent-pub" \
     -H "Accept: application/vnd.github+json" -o "$T/user.json" -w '%{http_code}' "$API/user" 2>/dev/null)"
   if [ "$code" = "200" ]; then
     TOKEN="$t"
     break
   else
-    bad "Токен $(fp "$t") не принят (HTTP $code)."
+    bad "Токен $(fp "$t") [${CAND_FILES[$i]}] не принят (HTTP $code)."
   fi
 done
 if [ -z "$TOKEN" ]; then
@@ -94,7 +97,7 @@ if [ -z "$TOKEN" ]; then
   echo "      github.com -> Settings -> Developer settings -> Personal access tokens ->"
   echo "      Tokens (classic) -> Generate new token (classic) -> галочка repo -> Generate -> Copy."
   echo "    Вставь его в .txt одной строкой и СОХРАНИ файл (Ctrl+S), затем запусти снова."
-  echo "    Какой токен лежит в файле — видно по отпечатку выше: первые…последние 4 знака."
+  echo "    Из какого файла каждый токен — подписано в строках выше."
   exit 1
 fi
 if command -v python3 >/dev/null 2>&1; then
@@ -187,11 +190,11 @@ if [ $rc -ne 0 ]; then
 fi
 ok "Ветка $BRANCH отправлена."
 
-step "Пуш тега $TAG ..."
-out="$(git -c "credential.helper=" -c "http.extraHeader=AUTHORIZATION: basic $B64" push origin "$TAG" 2>&1)"; rc=$?
+step "Пуш тега $TAG (force: перезаливаем на текущий HEAD) ..."
+out="$(git -c "credential.helper=" -c "http.extraHeader=AUTHORIZATION: basic $B64" push --force origin "$TAG" 2>&1)"; rc=$?
 printf '%s\n' "$out" | redact
-if [ $rc -eq 0 ]; then ok "Тег $TAG отправлен."
-else bad "Тег не отправлен (не критично). Руками: git push origin $TAG"; fi
+if [ $rc -eq 0 ]; then ok "Тег $TAG отправлен (указывает на свежий коммит)."
+else bad "Тег не отправлен (не критично). Руками: git push --force origin $TAG"; fi
 
 # --- 7. токен из памяти — стереть ----------------------------------------
 unset TOKEN B64 AUTH CANDIDATES
@@ -199,6 +202,8 @@ unset TOKEN B64 AUTH CANDIDATES
 # --- 8. проверка результата ----------------------------------------------
 code="$( "${CURL[@]}" -o /dev/null -w '%{http_code}' "$API/repos/${LOGIN}/${REPO_NAME}/branches/${BRANCH}" 2>/dev/null )"
 [ "$code" = "200" ] && ok "Проверено: ветка $BRANCH на GitHub на месте (HTTP 200)."
+tcode="$( "${CURL[@]}" -o /dev/null -w '%{http_code}' "$API/repos/${LOGIN}/${REPO_NAME}/git/ref/tags/$TAG" 2>/dev/null )"
+[ "$tcode" = "200" ] && ok "Проверено: тег $TAG на GitHub на месте (HTTP 200)."
 
 echo ""
 ok "ГОТОВО. Репозиторий: $REPO_HTML"

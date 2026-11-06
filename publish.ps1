@@ -52,9 +52,11 @@ if ($LASTEXITCODE -ne 0) {
 
 # --- 1. кандидаты в токены: собираем ВСЕ ----------------------------------
 $tokens = @()
+$tokenFiles = @()
 
 if (-not [string]::IsNullOrWhiteSpace($env:GH_TOKEN)) {
     $tokens += $env:GH_TOKEN.Trim()
+    $tokenFiles += 'переменная GH_TOKEN'
     Write-Ok 'Кандидат: токен из переменной GH_TOKEN'
 } else {
     # сканируем: папка скрипта, домашняя, Рабочий стол, Документы, Загрузки (без рекурсии)
@@ -87,12 +89,20 @@ if (-not [string]::IsNullOrWhiteSpace($env:GH_TOKEN)) {
         if ([string]::IsNullOrEmpty($raw)) { continue }
         $ms = [regex]::Matches($raw, 'gh[posur]_[A-Za-z0-9]{36,}|github_pat_[A-Za-z0-9_]{50,}')
         if ($ms.Count -gt 0) {
-            foreach ($m in $ms) { $tokens += $m.Value.Trim() }
+            foreach ($m in $ms) { $tokens += $m.Value.Trim(); $tokenFiles += $f }
             Write-Ok ('Файл с токеном: ' + $f)
         }
     }
 }
-if ($tokens.Count -gt 1) { $tokens = @($tokens | Select-Object -Unique) }
+if ($tokens.Count -gt 1) {
+    $seen = @{}; $uT = @(); $uF = @()
+    for ($i = 0; $i -lt $tokens.Count; $i++) {
+        if (-not $seen.ContainsKey($tokens[$i])) {
+            $seen[$tokens[$i]] = $true; $uT += $tokens[$i]; $uF += $tokenFiles[$i]
+        }
+    }
+    $tokens = @($uT); $tokenFiles = @($uF)
+}
 
 if ($tokens.Count -eq 0) {
     Write-Bad 'Токенов не нашёл вообще.'
@@ -104,7 +114,8 @@ if ($tokens.Count -eq 0) {
 # --- 2. живой токен: перепробуем все --------------------------------------
 Write-Step ('Токенов найдено: ' + $tokens.Count + '. Проверяю каждый через GitHub API...')
 $me = $null; $goodToken = $null; $codes = @()
-foreach ($t in $tokens) {
+for ($ti = 0; $ti -lt $tokens.Count; $ti++) {
+    $t = $tokens[$ti]
     $headers = @{
         Authorization = "Bearer $t"
         'User-Agent'  = 'universal-agent-pub'
@@ -119,7 +130,7 @@ foreach ($t in $tokens) {
         $me = $null
         try { $code = [int]$_.Exception.Response.StatusCode } catch { $code = 0 }
         $errMsg = $_.Exception.Message
-        Write-Bad ('Токен ' + (Get-Fp $t) + ' не принят (HTTP ' + $code + ').')
+        Write-Bad ('Токен ' + (Get-Fp $t) + ' (' + $tokenFiles[$ti] + ') не принят (HTTP ' + $code + ').')
         $codes += "$code"
     }
 }
@@ -129,7 +140,7 @@ if ($null -eq $me) {
     Write-Host '      github.com -> Settings -> Developer settings -> Personal access tokens ->'
     Write-Host '      Tokens (classic) -> Generate new token (classic) -> галочка repo -> Generate -> Copy.'
     Write-Host '    Вставь его в .txt одной строкой и СОХРАНИ файл (Ctrl+S), затем запусти снова.'
-    Write-Host '    Какой токен лежит в файле — видно по отпечатку выше: первые…последние 4 знака.'
+    Write-Host '    Из какого файла каждый токен — подписано в строках выше.'
     exit 1
 }
 $token = $goodToken
@@ -235,11 +246,11 @@ if ($LASTEXITCODE -ne 0) {
 }
 Write-Ok ($out.Trim())
 
-Write-Step ('Пуш тега ' + $Tag + ' ...')
-$tout = (& git -c 'credential.helper=' -c ('http.extraHeader=AUTHORIZATION: basic ' + $b64) push origin $Tag 2>&1 | Out-String)
+Write-Step ('Пуш тега ' + $Tag + ' (force: перезаливаем на текущий HEAD) ...')
+$tout = (& git -c 'credential.helper=' -c ('http.extraHeader=AUTHORIZATION: basic ' + $b64) push --force origin $Tag 2>&1 | Out-String)
 $tout = Hide-Token $tout
 if ($LASTEXITCODE -eq 0) { Write-Ok ($tout.Trim()) }
-else { Write-Host $tout; Write-Host ('    (тег не отправлен — не критично. Руками: git push origin ' + $Tag + ')') }
+else { Write-Host $tout; Write-Host ('    (тег не отправлен — не критично. Руками: git push --force origin ' + $Tag + ')') }
 
 # токен из памяти — стереть
 $pair = $null; $b64 = $null; $token = $null; $goodToken = $null; $headers = $null
@@ -252,6 +263,12 @@ try {
     $code = 200
 } catch { $code = 0 }
 if ("$code" -eq '200') { Write-Ok ('Проверено: ветка ' + $Branch + ' на GitHub на месте.') }
+$tcode = $null
+try {
+    Invoke-RestMethod -Uri "$ApiBase/repos/$($me.login)/$RepoName/git/ref/tags/$Tag" -Headers $h2 -Method Get -TimeoutSec 30 | Out-Null
+    $tcode = 200
+} catch { $tcode = 0 }
+if ("$tcode" -eq '200') { Write-Ok ('Проверено: тег ' + $Tag + ' на GitHub на месте.') }
 
 Write-Host ''
 Write-Ok ('ГОТОВО. Репозиторий: ' + $repoHtml)
