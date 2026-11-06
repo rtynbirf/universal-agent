@@ -272,7 +272,7 @@ if ("$tcode" -eq '200') { Write-Ok ('Проверено: тег ' + $Tag + ' н�
 
 Write-Host ''
 Write-Ok ('ГОТОВО. Репозиторий: ' + $repoHtml)
-Write-Ok ('Actions:     ' + $repoHtml + '/actions — CI сам прогонит 36 тестов и канон 6/6')
+Write-Ok ('Actions:     ' + $repoHtml + '/actions — CI сам прогонит тесты и канон 6/6')
 Write-Host ''
 Write-Host '    Отзови токен, которым пушил: GitHub -> Settings -> Developer settings -> Personal access tokens.' -ForegroundColor Yellow
 exit 0

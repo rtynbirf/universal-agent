@@ -1,5 +1,5 @@
 """
-universal_agent.py — Универсальный Целостный Агент (ЦУА) v2.1
+universal_agent.py — Универсальный Целостный Агент (ЦУА) v2.3
 =============================================================
 Философия: не система склеенных частей, а ЕДИНАЯ сущность:
   один мозг (LLMCore, модель-агностик)
@@ -82,6 +82,10 @@ class AgentConfig:
     exec_cpu_sec: int = 10                            # RLIMIT_CPU на дочерний процесс
     exec_mem_mb: int = 512                            # RLIMIT_AS на дочерний процесс
     exec_net_isolate: bool = False                    # unshare -n (нужны namespaces)
+    exec_docker: bool = False                         # контейнер поверх лимитов (фаза II)
+    exec_docker_image: str = "python:3.12-alpine"     # образ контейнерной песочницы
+    exec_docker_cpus: float = 1.0                     # ядер ЦПУ контейнеру
+    exec_docker_pids: int = 64                        # процессов внутри контейнера
     # --- слой 4: воля ------------------------------------------------------
     daemon_poll_sec: int = 5                          # такт проверки очереди
     queue_path: str = "./task_queue.txt"
@@ -280,6 +284,13 @@ def list_dir(path: str = ".") -> str:
     return "\n".join(f"{'Ф ' if p.is_file() else 'D '}{p.name}" for p in entries) or "(каталог пуст)"
 
 
+def _wrap_exec_result(out: str, err: str, status: str) -> str:
+    """Единый формат наблюдения для обеих песочниц (локальной и контейнерной)."""
+    head = f"--- stdout ---\n{out}\n--- stderr ---\n{err}\n--- {status} ---"
+    limit = _ENV.cfg.max_observation_chars
+    return head if len(head) <= limit else head[:limit] + f"\n...[усечено, всего {len(head)} символов]"
+
+
 def _run_python_sandbox(code: str, timeout_sec: int) -> str:
     """Изолированное исполнение: RLIMIT_CPU + RLIMIT_AS, kill группы
     процессов по таймауту, опционально сетевая изоляция (unshare -n)."""
@@ -330,21 +341,95 @@ def _run_python_sandbox(code: str, timeout_sec: int) -> str:
             proc.kill()
         out, err = proc.communicate()
         status = "TIMEOUT (процесс снят по лимиту времени)"
+    return _wrap_exec_result(out, err, status)
 
-    head = f"--- stdout ---\n{out}\n--- stderr ---\n{err}\n--- {status} ---"
-    limit = _ENV.cfg.max_observation_chars
-    return head if len(head) <= limit else head[:limit] + f"\n...[усечено, всего {len(head)} символов]"
+
+_DOCKER_READY: bool | None = None                 # здоровье демона docker — проверяем раз
+
+
+def _docker_available() -> bool:
+    """Одноразовый healthcheck рантайма docker: CLI на месте и демон отвечает.
+    Результат кешируется: если docker умер посреди жизни — песочница уже
+    выбрала маршрут, и врать ей после проверки нечестно."""
+    global _DOCKER_READY
+    if _DOCKER_READY is None:
+        try:
+            probe = subprocess.run(
+                ["docker", "version", "--format", "{{.Server.Version}}"],
+                capture_output=True, text=True, timeout=15,
+            )
+            _DOCKER_READY = probe.returncode == 0
+        except Exception:
+            _DOCKER_READY = False
+        if not _DOCKER_READY:
+            log.warning("docker недоступен — execute_python работает на локальных лимитах")
+    return _DOCKER_READY
+
+
+def _run_python_docker(code: str, timeout_sec: int) -> str:
+    """Контейнерная песочница (фаза II, «Крепость»): поверх локальных лимитов
+    добавляем границу ядра — сеть отрезана (--network none), память/ЦПУ/число
+    процессов зажаты cgroup-ами, корневая ФС read-only, caps сброшены,
+    процесс не-root, workspace смонтирован внутрь. По таймауту контейнер
+    снимается docker kill-ом — дерево процессов не оставляет сирот."""
+    cfg = _ENV.cfg
+    timeout = max(1, min(int(timeout_sec), cfg.exec_timeout_sec))
+    ws = str(Path(cfg.workspace_root).resolve())
+    container = f"ua-sbx-{uuid.uuid4().hex[:12]}"
+    uid = getattr(os, "getuid", lambda: 1000)()
+    gid = getattr(os, "getgid", lambda: 1000)()
+    mem = int(cfg.exec_mem_mb)
+    cmd: list[str] = [
+        "docker", "run", "--rm",
+        "--name", container,
+        "--network", "none",                                # никакой сети
+        "--memory", f"{mem}m",                              # потолок RAM
+        "--memory-swap", f"{mem}m",                         # swap-побег закрыт
+        "--cpus", str(float(cfg.exec_docker_cpus)),
+        "--pids-limit", str(int(cfg.exec_docker_pids)),
+        "--read-only",                                      # корень ФС — только чтение
+        "--tmpfs", "/tmp:rw,noexec,nosuid,size=32m",        # единственная записываемая точка
+        "--cap-drop", "ALL",
+        "--security-opt", "no-new-privileges",
+        "--user", f"{uid}:{gid}",                           # не-root внутри
+        "--volume", f"{ws}:/workspace",                     # те же руки, тот же workspace
+        "--workdir", "/workspace",
+        cfg.exec_docker_image,
+        "python", "-B", "-c", code,
+    ]
+    started = time.time()
+    try:
+        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+        status = f"exit={proc.returncode}"
+        out, err = proc.stdout, proc.stderr
+    except subprocess.TimeoutExpired:
+        try:
+            subprocess.run(["docker", "kill", container],
+                           capture_output=True, text=True, timeout=15)
+        except Exception:
+            pass
+        out, err = "", ""
+        status = "TIMEOUT (контейнер снят по лимиту времени)"
+    except FileNotFoundError:
+        return _wrap_exec_result("", "docker CLI не найден", "ОШИБКА ЗАПУСКА")
+    status += f" (docker {container}, {time.time() - started:.1f}с)"
+    return _wrap_exec_result(out, err, status)
 
 
 @tool
 def execute_python(code: str, timeout_sec: int = 30) -> str:
-    """Исполнить программу на Python в песочнице (лимиты CPU/RAM/время),
-    вернуть stdout/stderr/код выхода.
-    ВНИМАНИЕ продакшну: для враждебного ввода добавьте контейнер (docker
-    --network none) поверх этих лимитов.
+    """Исполнить программу на Python в песочнице и вернуть stdout/stderr/код выхода.
+    При UA_EXEC_DOCKER=1 — контейнерная изоляция (сеть отрезана, cgroup-лимиты
+    RAM/CPU/PID, read-only корень, не-root, снимается по таймауту);
+    без docker или при UA_EXEC_DOCKER=0 — локальные RLIMIT-лимиты.
     Параметры:
     code: полный исходник программы;
     timeout_sec: предел времени исполнения 1..exec_timeout_sec."""
+    if _ENV.cfg.exec_docker:
+        if _docker_available():
+            return _run_python_docker(code, timeout_sec)
+        return "(docker недоступен — откат на локальные лимиты)\n" + \
+            _run_python_sandbox(code, timeout_sec)
     return _run_python_sandbox(code, timeout_sec)
 
 

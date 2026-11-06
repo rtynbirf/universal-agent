@@ -207,7 +207,7 @@ tcode="$( "${CURL[@]}" -o /dev/null -w '%{http_code}' "$API/repos/${LOGIN}/${REP
 
 echo ""
 ok "ГОТОВО. Репозиторий: $REPO_HTML"
-ok "Actions:     $REPO_HTML/actions — CI сам прогонит 36 тестов и канон 6/6"
+ok "Actions:     $REPO_HTML/actions — CI сам прогонит тесты и канон 6/6"
 echo ""
 printf '\033[33m  Отзови токен, которым пушил: GitHub -> Settings -> Developer settings -> Personal access tokens.\033[0m\n'
 exit 0
