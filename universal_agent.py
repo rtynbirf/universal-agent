@@ -645,7 +645,7 @@ class UniversalAgent:
             observation = self.dispatch(name, params)
             self.memory.record(task_id, "observation", observation[:1500])
             trace.append(f"{step}. {name} -> {observation[:140]}")
-            log.info("[%s] шаг %d: %s", task_id, step, name)
+            log.info("[%s] шаг %d: %s | %s", task_id, step, name, thought[:160])
             history.append({"role": "user", "content":
                 f"НАБЛЮДЕНИЕ (шаг {step}, {name}):\n{observation}\n"
                 "Продолжай цикл. Ответ — строго JSON."})
