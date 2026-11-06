@@ -1,0 +1,4 @@
+# EOL-канон: sh — LF (bash), bat/ps1 — CRLF (Windows)
+*.sh text eol=lf
+*.bat text eol=crlf
+*.ps1 text eol=crlf

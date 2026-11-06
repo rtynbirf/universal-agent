@@ -1,0 +1,17 @@
+# python
+__pycache__/
+*.pyc
+
+# окружение и секреты — НИКОГДА не коммитить
+.env
+*.token
+*_token.txt
+
+# живые органы агента (создаются в рантайме)
+memory/
+task_queue.txt
+results.log
+workspace/*
+!workspace/.gitkeep
+knowledge/*
+!knowledge/.gitkeep

@@ -1,0 +1,14 @@
+.git
+.github
+__pycache__
+*.pyc
+*.zip
+.env
+tests
+release
+task_queue*
+results.log
+knowledge/*
+workspace/*
+!knowledge/.gitkeep
+!workspace/.gitkeep
