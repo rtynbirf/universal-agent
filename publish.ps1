@@ -84,6 +84,7 @@ if (-not [string]::IsNullOrWhiteSpace($env:GH_TOKEN)) {
     foreach ($f in $files) {
         $raw = ''
         try { $raw = Get-Content -LiteralPath $f -Raw -ErrorAction Stop } catch { continue }
+        if ([string]::IsNullOrEmpty($raw)) { continue }
         $ms = [regex]::Matches($raw, 'gh[posur]_[A-Za-z0-9]{36,}|github_pat_[A-Za-z0-9_]{50,}')
         if ($ms.Count -gt 0) {
             foreach ($m in $ms) { $tokens += $m.Value.Trim() }
@@ -216,6 +217,7 @@ else { git remote add origin $origin | Out-Null }
 $pair = 'x-access-token:' + $token
 $b64  = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes($pair))
 $env:GIT_TERMINAL_PROMPT = '0'
+$env:GIT_REDIRECT_STDERR = '2>&1'   # прогресс git-а не должен выглядеть как ошибка
 
 $pushArgs = @('-c', 'credential.helper=', '-c', ('http.extraHeader=AUTHORIZATION: basic ' + $b64),
               'push', '-u', 'origin', ($Branch + ':' + $Branch))
