@@ -1,5 +1,8 @@
 # UniversalAgent (ЦУА) — Универсальный Целостный Агент
 
+<p align="center"><img src=".github/social-preview.png" alt="universal-agent" width="100%"></p>
+
+
 ![CI](https://github.com/rtynbirf/universal-agent/actions/workflows/ci.yml/badge.svg)
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
