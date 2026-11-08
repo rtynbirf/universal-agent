@@ -1,0 +1,46 @@
+# universal-agent
+> UniversalAgent (TsUA) - single-brain holistic agent: one LLM core, closed perception-action loop, four-layer memory, sandboxed tools. Pure stdlib.
+
+Автоген 2026-11-08 · источник: живой GitHub API (номера и файлы не руками) · владелец rtynbirf · ветка `main`
+
+## Мембрана
+- README.md — для человека (UniversalAgent (ЦУА) — Универсальный Целостный Агент)
+- AGENTS.md — есть
+- LICENSE — MIT
+- topics: agent-framework, autonomy, python, swarm-agents
+
+## Карта корня
+- .dockerignore
+- .env.example
+- .gitattributes
+- .github/
+- .gitignore
+- AGENTS.md
+- CHANGELOG.md
+- CODEOWNERS
+- CONTRIBUTING.md
+- Dockerfile
+- LICENSE
+- Makefile
+- PUBLISH.bat
+- PUSH.md
+- README.md
+- … ещё 12
+
+## Метаболизм (make)
+- make help
+- make verify
+- make test
+- make lint
+- make manifest
+- make run
+- make daemon
+- make clean
+
+## CI
+- workflow: ci
+
+## Ссылки
+- [GitHub](https://github.com/rtynbirf/universal-agent)
+- [README](https://github.com/rtynbirf/universal-agent/blob/main/README.md)
+- [raw llms.txt](https://raw.githubusercontent.com/rtynbirf/universal-agent/main/llms.txt)
