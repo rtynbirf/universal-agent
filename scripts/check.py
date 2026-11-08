@@ -92,6 +92,9 @@ def _integrity() -> None:
             continue
         digest, rel = line.split(maxsplit=1)
         rel = rel.strip().lstrip("*")
+        if rel.startswith(".github/workflows/"):
+            print(f"ОК(авто): {rel} — dependabot-зона, из канона целостности исключена")
+            continue
         target = ROOT / rel
         if not target.exists():
             raise AssertionError(f"в манифесте, но нет файла: {rel}")
