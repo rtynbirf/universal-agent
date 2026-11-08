@@ -23,6 +23,8 @@ jobs:
         run: python scripts/check.py
       - name: П55 · healthcheck — A2A Agent Card ↔ поведение
         run: make health
+      - name: T17 · manifest-freshness — манифест генерится, а не пишется
+        run: make manifest-check
 
   lint:
     runs-on: ubuntu-latest
