@@ -1,0 +1,60 @@
+{
+  "protocolVersion": "1.0",
+  "name": "UniversalAgent (ЦУА)",
+  "description": "Универсальный Целостный Агент: один мозг (LLM-агностик, OpenAI-совместимый рантайм), четыре контура памяти, руки-инструменты, внутренний цикл воли и автономный демон. Только стандартная библиотека Python 3.10+.",
+  "url": "http://localhost:8080/",
+  "preferredTransport": "JSONRPC",
+  "version": "2.3.0",
+  "provider": {
+    "organization": "rtynbirf",
+    "url": "https://github.com/rtynbirf/universal-agent"
+  },
+  "documentationUrl": "https://github.com/rtynbirf/universal-agent#readme",
+  "capabilities": {
+    "streaming": false,
+    "pushNotifications": false,
+    "stateTransitionHistory": false
+  },
+  "defaultInputModes": ["text/plain"],
+  "defaultOutputModes": ["text/plain"],
+  "skills": [
+    {
+      "id": "task-solving",
+      "name": "Решение задачи (цикл воли)",
+      "description": "Один цикл solve(): АНАЛИЗ → ПЛАН → ДЕЙСТВИЕ → РЕФЛЕКСИЯ по JSON-протоколу, бюджет шагов, саморемонт плана. Запуск: python universal_agent.py task --task \"...\"",
+      "tags": ["mode", "cli", "llm"],
+      "examples": ["python universal_agent.py task --task \"Изучи каталог workspace и напиши инвентаризацию\""]
+    },
+    {
+      "id": "autonomous-daemon",
+      "name": "Автономная жизнь (демон)",
+      "description": "Демон воли: непрерывно читает очередь задач task_queue.txt и решает их циклом solve(). Запуск: python universal_agent.py daemon",
+      "tags": ["mode", "daemon", "autonomy"],
+      "examples": ["python universal_agent.py daemon"]
+    },
+    {
+      "id": "workspace-files",
+      "name": "Руки: файлы workspace",
+      "description": "Чтение, запись и обзор файлов рабочей директории агента: инструменты read_file, write_file, list_dir (пути заперты внутри workspace).",
+      "tags": ["tool", "files", "workspace"]
+    },
+    {
+      "id": "python-execution",
+      "name": "Руки: исполнение Python",
+      "description": "Инструмент execute_python: песочница RLIMIT, опционально одноразовый docker-контейнер (--network none, --read-only, --cap-drop ALL, лимиты RAM/CPU/PID).",
+      "tags": ["tool", "code", "sandbox"]
+    },
+    {
+      "id": "web-search",
+      "name": "Руки: веб-поиск",
+      "description": "Инструмент web_search: поиск через DuckDuckGo HTML без ключей (1..10 результатов), заменим на любой поисковый бэкенд.",
+      "tags": ["tool", "web", "search"]
+    },
+    {
+      "id": "memory",
+      "name": "Память: remember/recall",
+      "description": "Долговременная память на SQLite+FTS5 (с LIKE-фолбэком): инструменты remember и recall; всего четыре контура памяти — рабочая, эпизодическая, семантическая, процедурная.",
+      "tags": ["memory", "sqlite", "fts5"]
+    }
+  ]
+}
