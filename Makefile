@@ -21,7 +21,7 @@ lint:
 
 manifest:
 	@mkdir -p release
-	sha256sum universal_agent.py README.md CHANGELOG.md LICENSE CONTRIBUTING.md SECURITY.md pyproject.toml Makefile Dockerfile .github/workflows/ci.yml > release/manifest_sha256.txt
+	sha256sum universal_agent.py README.md CHANGELOG.md LICENSE CONTRIBUTING.md SECURITY.md pyproject.toml Makefile Dockerfile > release/manifest_sha256.txt
 	@echo "release/manifest_sha256.txt обновлён"
 
 run:
