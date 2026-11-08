@@ -247,7 +247,7 @@ def main(argv: list[str]) -> int:
           f"({len(card.get('skills', []))} навыков)")
     print(f"PASS  version {card.get('version')} == pyproject")
     print(f"PASS  skills ↔ руки: {sorted(SKILL_TOOLS)} покрыты, скрытых рук нет")
-    print(f"PASS  modes: task/daemon на месте; capabilities честные (без выдумок)")
+    print("PASS  modes: task/daemon на месте; capabilities честные (без выдумок)")
     print(f"# skills: {skills}")
     print("# Result: card ↔ behavior OK — агент честен о себе")
     return 0

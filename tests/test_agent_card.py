@@ -5,7 +5,6 @@
 расхождение карточки с поведением = красный (rc=2).
 """
 import json
-import os
 import re
 import subprocess
 import sys
