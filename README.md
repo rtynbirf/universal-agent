@@ -1,3 +1,7 @@
+<div align="center">
+  <img src="banner.png" alt="universal-agent — Один целостный мозг-агент на одной LLM" width="100%">
+</div>
+
 # UniversalAgent (ЦУА) — Универсальный Целостный Агент
 
 <p align="center"><img src=".github/social-preview.png" alt="universal-agent" width="100%"></p>
