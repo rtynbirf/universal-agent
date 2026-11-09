@@ -44,3 +44,4 @@
 - [GitHub](https://github.com/rtynbirf/universal-agent)
 - [README](https://github.com/rtynbirf/universal-agent/blob/main/README.md)
 - [raw llms.txt](https://raw.githubusercontent.com/rtynbirf/universal-agent/main/llms.txt)
+- [PULSE.md](PULSE.md): живой пульс репозитория — прогоны, пломбы, здоровье.
