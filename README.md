@@ -2,6 +2,15 @@
   <img src="banner.png" alt="universal-agent — Один целостный мозг-агент на одной LLM" width="100%">
 </div>
 
+<!--ФОРЖ:МУЗА:НАЧАЛО-->
+<div align="center">
+  <img src="repo-muse.svg" width="100%" alt="Муза universal-agent: картина кузни ПОЛИМАТ, раунд 9" />
+  <br/>
+  <img src="forge-divider.svg" width="62%" alt="разделитель кузни ПОЛИМАТ" />
+</div>
+<!--ФОРЖ:МУЗА:КОНЕЦ-->
+
+
 # UniversalAgent (ЦУА) — Универсальный Целостный Агент
 
 <p align="center"><img src=".github/social-preview.png" alt="universal-agent" width="100%"></p>
@@ -220,3 +229,10 @@ git push -u origin main
 **Никогда** не кладите токены и ключи в файлы репозитория и в файлы задач —
 ключи живут только в переменных окружения (`UA_LLM_API_KEY`, деплой-секреты).
 Утёкший в текст/чат ключ считается скомпрометированным: отзыв немедленно.
+
+<!--ФОРЖ:ПОДВАЛ-->
+---
+
+<div align="center">
+  <sub>◆ картина и штандарт — ручная ковка <a href="https://github.com/rtynbirf">КУЗНИ ПОЛИМАТ</a> · ЧЕЛОВЕК=АККАУНТ=PID1 ◆</sub>
+</div>
