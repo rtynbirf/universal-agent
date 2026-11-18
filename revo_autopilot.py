@@ -1,17 +1,19 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """РЕВО-ПАСПОРТ СТРАНИЦЫ — движок контентного изображения.
 Куёт revo-page.svg СТРОГО из фактов страницы: файлы, папки, коммиты, размер, дата,
 лексикон README, топики. Один исходник: песочница правит CFG атрибутом, автопилот в репо
 несёт свой CFG, вшитый при деплое. Только stdlib — работает в GitHub Actions."""
-import hashlib, json, os, re, subprocess
+import hashlib
+import json
+import os
+import re
+import subprocess
 
 try:
     CFG = json.loads(r'''{"name": "universal-agent", "num": 58, "school": "РУКА ЛЕОНАРДО", "desc": "UniversalAgent (TsUA) - single-brain holistic agent: one LLM core, closed perception-action loop, four-layer memory, sandboxed tools. Pure stdlib.", "topics": ["agent", "ai-agent", "architecture", "autonomous-agents", "llm", "python"], "releases": 1, "palette": {"bg": "#0E0C09", "bg2": "#171310", "ink": "#E8DCC0", "gold": "#B08D3E", "gold2": "#F2C464", "dim": "#77694C"}}''')
-except Exception:  # пустая заглушка для импорта в песочнице; CFG подменяется атрибутом
+except ValueError:  # пустая заглушка для импорта в песочнице; CFG подменяется атрибутом
     CFG = {"name": "REVO", "num": 0, "school": "", "desc": "", "topics": [], "releases": 0,
-           "palette": dict(bg="#EDE9E0", bg2="#F4F1EA", ink="#17150F", gold="#8A6D2F",
-                           gold2="#B08D3E", dim="#6E675B")}
+           "palette": {"bg": "#EDE9E0", "bg2": "#F4F1EA", "ink": "#17150F", "gold": "#8A6D2F",
+                       "gold2": "#B08D3E", "dim": "#6E675B"}}
 
 MONO = "'Cascadia Mono', ui-monospace, Consolas, monospace"
 SERIF = "Georgia, 'Times New Roman', serif"
@@ -163,7 +165,7 @@ def patch_readme(md, facts):
         "<!--ФОРЖ:ПАСПОРТ:КОНЕЦ-->"
     )
     if "<!--ФОРЖ:ПАСПОРТ:НАЧАЛО-->" in md:
-        md = re.sub(r"<!--ФОРЖ:ПАСПОРТ:НАЧАЛО-->.*?<!--ФОРЖ:ПАСПОРТ:КОНЕЦ-->", block.replace("\\", "\\\\"), md, flags=re.S)
+        md = re.sub(r"<!--ФОРЖ:ПАСПОРТ:НАЧАЛО-->.*?<!--ФОРЖ:ПАСПОРТ:КОНЕЦ-->", block.replace("\\", "\\\\"), md, flags=re.DOTALL)
         return md
     if "<!--ФОРЖ:МУЗА:КОНЕЦ-->" in md:
         return md.replace("<!--ФОРЖ:МУЗА:КОНЕЦ-->", "<!--ФОРЖ:МУЗА:КОНЕЦ-->\n\n" + block, 1)
@@ -176,14 +178,15 @@ def patch_readme(md, facts):
 
 
 def collect_local():
-    paths = subprocess.run(["git", "ls-files"], capture_output=True, text=True).stdout.split()
-    n_commits = subprocess.run(["git", "rev-list", "--count", "HEAD"], capture_output=True, text=True).stdout.strip()
-    last_date = subprocess.run(["git", "log", "-1", "--format=%cs"], capture_output=True, text=True).stdout.strip()
+    paths = subprocess.run(["git", "ls-files"], capture_output=True, text=True, check=False).stdout.split()
+    n_commits = subprocess.run(["git", "rev-list", "--count", "HEAD"], capture_output=True, text=True, check=False).stdout.strip()
+    last_date = subprocess.run(["git", "log", "-1", "--format=%cs"], capture_output=True, text=True, check=False).stdout.strip()
     size_kb = sum((os.path.getsize(os.path.join(dp, f)) for dp, dn, fn in os.walk(".")
                    for f in fn if ".git" not in dp), 0) // 1024
     readme = ""
     if os.path.exists("README.md"):
-        readme = open("README.md", encoding="utf-8", errors="ignore").read()
+        with open("README.md", encoding="utf-8", errors="ignore") as fh:
+            readme = fh.read()
     f = facts_from_paths(paths, int(n_commits or 1), last_date, size_kb, readme,
                          CFG.get("topics") or [], CFG.get("desc") or "", CFG.get("releases") or 0)
     return f
@@ -192,9 +195,12 @@ def collect_local():
 if __name__ == "__main__":
     facts = collect_local()
     svg = build_svg(facts)
-    open("revo-page.svg", "w", encoding="utf-8").write(svg)
+    with open("revo-page.svg", "w", encoding="utf-8") as fh:
+        fh.write(svg)
     if os.path.exists("README.md"):
-        md = open("README.md", encoding="utf-8").read()
-        open("README.md", "w", encoding="utf-8").write(patch_readme(md, facts))
+        with open("README.md", encoding="utf-8") as fh:
+            md = fh.read()
+        with open("README.md", "w", encoding="utf-8") as fh:
+            fh.write(patch_readme(md, facts))
     print(f"РЕВО-ПАСПОРТ: {CFG['name']} — файлов {facts['n_files']}, папок {facts['n_dirs']}, "
           f"коммитов {facts['n_commits']}, лексикон {' '.join(facts['lexicon'])}, SHA-{facts['hash8']}")
