@@ -1,6 +1,7 @@
 version: 2
 updates:
-  - package-ecosystem: "github-actions"
+  - package-ecosystem:
+    open-pull-requests-limit: 0  # версионный шум выключен (чистка 2026-11-18) "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
