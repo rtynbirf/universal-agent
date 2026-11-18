@@ -1,12 +1,12 @@
 <div align="center">
-  <img src="banner.png" alt="universal-agent — Один целостный мозг-агент на одной LLM" width="100%">
+  <img src="https://cdn.jsdelivr.net/gh/rtynbirf/universal-agent@main/banner.png" alt="universal-agent — Один целостный мозг-агент на одной LLM" width="100%">
 </div>
 
 <!--ФОРЖ:МУЗА:НАЧАЛО-->
 <div align="center">
-  <img src="repo-muse.svg" width="100%" alt="Муза universal-agent: мастерская РУКА ЛЕОНАРДО, кузня ПОЛИМАТ, раунд 12 · REVE=РЕВО" />
+  <img src="https://cdn.jsdelivr.net/gh/rtynbirf/universal-agent@main/repo-muse.svg" width="100%" alt="Муза universal-agent: мастерская РУКА ЛЕОНАРДО, кузня ПОЛИМАТ, раунд 12 · REVE=РЕВО" />
   <br/>
-  <img src="forge-divider.svg" width="62%" alt="делитель мастерской РУКА ЛЕОНАРДО" />
+  <img src="https://cdn.jsdelivr.net/gh/rtynbirf/universal-agent@main/forge-divider.svg" width="62%" alt="делитель мастерской РУКА ЛЕОНАРДО" />
 </div>
 <!--ФОРЖ:МУЗА:КОНЕЦ-->
 
@@ -24,7 +24,7 @@
 
 # UniversalAgent (ЦУА) — Универсальный Целостный Агент
 
-<p align="center"><img src=".github/social-preview.png" alt="universal-agent" width="100%"></p>
+<p align="center"><img src="https://cdn.jsdelivr.net/gh/rtynbirf/universal-agent@main/.github/social-preview.png" alt="universal-agent" width="100%"></p>
 
 
 ![CI](https://github.com/rtynbirf/universal-agent/actions/workflows/ci.yml/badge.svg)
